@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 
 pub mod reader;
 pub mod writer;
+mod bbo;
+
 #[derive(Serialize,Deserialize,Debug)]
 pub struct Subscription<'a>{
     method: & 'a str,

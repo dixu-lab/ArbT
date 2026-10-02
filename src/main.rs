@@ -1,5 +1,7 @@
 mod hyper_liquid;
 mod binance;
+mod state;
+mod engine;
 
 use futures_util::{StreamExt};
 
@@ -32,19 +34,35 @@ async fn main()->Result<(),Box<dyn std::error::Error>>{
   let ( write_hyper_liquid,
      read_hyper_liquid)     =        stream_hyper_liquid.split();
 
-   let msg =  binance::Subscription::new(vec!["btcusdt@bookTicker"],1);
+   let msg_binance =  binance::Subscription::new(vec!["btcusdt@bookTicker","bnbusdt@bookTicker"],1);
+
+
 
     let msg_hyper_liquid = hyper_liquid::Subscription::new("BTC");
-    let _= binance::writer::writer(write_binance,msg).await;
+    let _= binance::writer::writer(write_binance,msg_binance).await;
+
     let _ = hyper_liquid::writer::writer(write_hyper_liquid,msg_hyper_liquid).await;
+
+    let state = state::MarketState::new();
+  let state_binance =state.clone() ;
+    let state_hyper_liquid = state.clone();
+
   let binance_handler
       = tokio::spawn(
-           binance::reader::read(read_binance)
+           binance::reader::read(read_binance,state_binance)
        );
+
+
+
+
   let hyperliquid_handler
       = tokio::spawn(
-          hyper_liquid::reader::read(read_hyper_liquid)
+          hyper_liquid::reader::read(read_hyper_liquid,state_hyper_liquid)
        );
+
+
+
+
 
   let _= tokio::join!(binance_handler,hyperliquid_handler);
 
