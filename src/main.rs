@@ -8,6 +8,8 @@ use futures_util::{StreamExt};
 // Binance : {"e":"aggTrade","E":1790397172156,"s":"BTCUSDT","a":4074288744,"p":"83917.87000000","q":"0.00020000","f":6714723978,"l":6714723978,"T":1790397172156,"m":true,"M":true}
 
 use tokio_tungstenite;
+
+
 #[tokio::main]
 async fn main()->Result<(),Box<dyn std::error::Error>>{
   // let url_binance = "wss://stream.binance.com:9443/ws/btcusdt@aggTrade";
@@ -46,6 +48,8 @@ async fn main()->Result<(),Box<dyn std::error::Error>>{
     let state = state::MarketState::new();
   let state_binance =state.clone() ;
     let state_hyper_liquid = state.clone();
+    let state_engine = state.clone();
+   
 
   let binance_handler
       = tokio::spawn(
@@ -59,6 +63,15 @@ async fn main()->Result<(),Box<dyn std::error::Error>>{
       = tokio::spawn(
           hyper_liquid::reader::read(read_hyper_liquid,state_hyper_liquid)
        );
+
+    for entry in state_engine.assets.iter() {
+        let asset_state = entry.value().clone();
+        let engine_state = state.clone();
+
+        tokio::spawn(async move {
+            engine::engine(engine_state, asset_state).await;
+        });
+    }
 
 
 
